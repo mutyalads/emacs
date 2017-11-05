@@ -49,17 +49,17 @@
 
 (setq inhibit-startup-message t) ;; hide the startup message
 (load-theme 'material t) ;; load material theme
-(global-linum-mode t) ;; enable line numbers globally
+(global-linum-mode -1) ;; disable/enable line numbers globally
 
 ;; PYTHON CONFIGURATION
 ;; --------------------------------------
 
-(elpy-enable)
-(elpy-use-ipython)
+;; (elpy-enable)
+;; (elpy-use-ipython)
 
 ;; use flycheck not flymake with elpy
 (when (require 'flycheck nil t)
-  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (setq elpy-modules (delq 'elpy-module-flymake 'elpy-modules))
   (add-hook 'elpy-mode-hook 'flycheck-mode))
 
 ;; enable autopep8 formatting on save
@@ -71,8 +71,6 @@
 
 ;; desktop save mode
 (desktop-save-mode 1)
-;; shortcuts for emacs
-(global-set-key "\C-c\C-y" "\C-a\C- \C-n\M-w\C-y")
 
 ;; init.el ends here
 
@@ -115,6 +113,11 @@
   :ensure t
   :interpreter
   ("scala" . scala-mode))
+
+(use-package xref-js2
+  :disabled
+  :ensure t)
+
 
 ;;; minor modes for scala developement
 (use-package focus
@@ -292,7 +295,6 @@
   :config (global-undo-tree-mode)
   :bind ("s-/" . undo-tree-visualize))
 
-;; expand like in atom
 (use-package expand-region
   :commands 'er/expand-region
   :bind ("C-=" . er/expand-region))
@@ -318,8 +320,6 @@
   (add-hook 'js2-mode-hook #'js2-refactor-mode)
   (js2r-add-keybindings-with-prefix "C-c C-r"))
 
-(use-package xref-js2
-  :ensure t)
 (use-package company-tern
   :ensure t)
 (use-package tern
@@ -333,6 +333,16 @@
 (define-key tern-mode-keymap (kbd "M-.") nil)
 (define-key tern-mode-keymap (kbd "M-,") nil)
 
+;; projectile-speedbar
+(use-package projectile-speedbar
+  :ensure t)
+(bind-key "M-<f2>" 'projectile-speedbar-open-current-buffer-in-tree)
+
+(use-package sr-speedbar
+  :ensure t)
+
+(use-package neotree
+  :ensure t)
 ;;; themes
 ;;material-theme
 
@@ -351,9 +361,9 @@
   (next-line 1)
   (yank)
 )
-(global-set-key (kbd "C-d") 'duplicate-line)
-;; (global-set-key (kbd "C-c SPC") 'ace-jump-mode)
-(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+(global-set-key (kbd "C-c C-d") 'duplicate-line)
+(global-set-key (kbd "C-c SPC") 'ace-jump-mode)
+
 
 (defun indent-buffer ()
   "Indent the entire buffer."
@@ -383,27 +393,39 @@
 
 
 ;;; shortcuts
-(global-set-key (kbd "C-<backspace>") 'contextual-backspace)
-(global-set-key (kbd "C-c C-l") 'org-insert-link-global)
-(global-set-key (kbd "C-c C-o") 'org-open-at-point-global)
+(bind-key "C-<Backspace>" 'contextual-backspace)
+(bind-key "C-c C-l" 'org-insert-link-global)
+(bind-key "C-c l" 'org-store-link)
+(bind-key "C-c C-o" 'org-open-at-point-global)
+(bind-key "C-+" 'text-scale-increase)
+(bind-key "C--" 'text-scale-decrease)
+(bind-key "S-C-<left>" 'shrink-window-horizontally)
+(bind-key "S-C-<right>" 'enlarge-window-horizontally)
+(bind-key "S-C-<down>" 'shrink-window)
+(bind-key "S-C-<up>" 'enlarge-window)
 
+;; toolbar
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(send-mail-function (quote mailclient-send-it)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+;;; functions
+(defun kill-other-buffers ()
+  "Kill all other buffers."
+  (interactive)
+  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
+
+ (defun kill-dired-buffers ()
+	 (interactive)
+	 (mapc (lambda (buffer) 
+           (when (eq 'dired-mode (buffer-local-value 'major-mode buffer)) 
+             (kill-buffer buffer))) 
+         (buffer-list)))
 
 ;;; windows related
- ;; full screen
-(w32-send-sys-command 61488)
+;; (w32-send-sys-command 61488)
+;; (setq recentf-auto-cleanup 'never)
+;; (toggle-frame-fullscreen)
+(run-with-idle-timer 0.1 nil 'toggle-fullscreen)
 
 ;;; ends
-
