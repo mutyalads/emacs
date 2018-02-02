@@ -20,10 +20,10 @@
 
 (require 'package)
 (setq
- package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                    ("org" . "http://orgmode.org/elpa/")
-                    ("melpa" . "http://melpa.org/packages/")
-                    ("melpa-stable" . "http://stable.melpa.org/packages/"))
+ package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
+                    ("org" . "https://orgmode.org/elpa/")
+                    ("melpa" . "https://melpa.org/packages/")
+                    ("melpa-stable" . "https://stable.melpa.org/packages/"))
  package-archive-priorities '(("melpa-stable" . 1)))
 
 (package-initialize)
@@ -119,6 +119,8 @@
   :disabled
   :ensure t)
 
+(use-package rjsx-mode
+  :ensure t)
 
 ;;; minor modes for scala developement
 (use-package focus
@@ -153,6 +155,11 @@
 (use-package ace-jump-mode
   :ensure t
   :pin melpa)
+
+(use-package which-key
+  :ensure t
+  :pin melpa)
+(which-key-mode)
 
 ;; smart parenthesis
 (use-package smartparens
@@ -241,10 +248,13 @@
 ;;; Navigation
 (use-package projectile
   :demand
-  :init   (setq projectile-use-git-grep t)
+  :init   (setq
+	   projectile-use-git-grep t
+	   projectile-enable-caching t
+	   projectile-indexing-method 'alien)
   :config (projectile-global-mode t)
-  :bind   (("s-f" . projectile-find-file)
-           ("s-F" . projectile-grep)))
+  :bind   (("s-r" . projectile-grep)))
+
 ;; go to last change
 (use-package goto-chg
   :commands goto-last-change
@@ -325,6 +335,8 @@
   :ensure t)
 (use-package tern
   :ensure t)
+(use-package origami
+  :ensure t)
 ;; js hooks
 (add-hook 'js2-mode-hook (lambda ()
 			   (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
@@ -333,6 +345,16 @@
                            (company-mode)))
 (define-key tern-mode-keymap (kbd "M-.") nil)
 (define-key tern-mode-keymap (kbd "M-,") nil)
+
+(defun json-hooks-all ()
+                   (restclient-mode)
+		   (flycheck-mode)
+		   (yafolding-mode))
+		   
+;; json hooks
+(use-package json-mode
+  :mode ("\\.json$" . json-mode))
+(add-hook 'json-mode-hook 'json-hooks-all)
 
 ;; projectile-speedbar
 (use-package projectile-speedbar
@@ -344,6 +366,48 @@
 
 (use-package neotree
   :ensure t)
+
+
+;; INSTALLING HASKELL
+;; https://github.com/serras/emacs-haskell-tutorial/blob/master/tutorial.md
+
+(use-package haskell-mode
+  :ensure t
+  :bind ([F8] . haskell-navigate-imports))
+
+(use-package hindent
+  :ensure t)
+
+(let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
+  (setenv "PATH" (concat my-cabal-path path-separator (getenv "PATH")))
+  (add-to-list 'exec-path my-cabal-path))
+(custom-set-variables '(haskell-tags-on-save t))
+;; M-x haskell-mode-stylish-buffer
+
+(custom-set-variables
+  '(haskell-process-suggest-remove-import-lines t)
+  '(haskell-process-auto-import-loaded-modules t)
+  '(haskell-process-log t))
+(eval-after-load 'haskell-mode '(progn
+  (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-or-reload)
+  (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
+  (define-key haskell-mode-map (kbd "C-c C-n C-t") 'haskell-process-do-type)
+  (define-key haskell-mode-map (kbd "C-c C-n C-i") 'haskell-process-do-info)
+  (define-key haskell-mode-map (kbd "C-c C-n C-c") 'haskell-process-cabal-build)
+  (define-key haskell-mode-map (kbd "C-c C-n c") 'haskell-process-cabal)))
+(eval-after-load 'haskell-cabal '(progn
+  (define-key haskell-cabal-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
+  (define-key haskell-cabal-mode-map (kbd "C-c C-k") 'haskell-interactive-mode-clear)
+  (define-key haskell-cabal-mode-map (kbd "C-c C-c") 'haskell-process-cabal-build)
+  (define-key haskell-cabal-mode-map (kbd "C-c c") 'haskell-process-cabal)))
+
+(custom-set-variables '(haskell-process-type 'cabal-repl))
+;;C-c C-o to invoke the compiler
+(eval-after-load 'haskell-mode
+  '(define-key haskell-mode-map (kbd "C-c C-o") 'haskell-compile))
+
+
+
 ;;; themes
 ;;material-theme
 
@@ -364,6 +428,7 @@
 )
 (global-set-key (kbd "C-c C-d") 'duplicate-line)
 (global-set-key (kbd "C-c SPC") 'ace-jump-mode)
+
 
 
 (defun indent-buffer ()
@@ -389,8 +454,12 @@
             (company-mode)
             (scala-mode:goto-start-of-code)
 	    (rainbow-delimiters-mode)
+	    (yafolding-mode)
 	    )
 	  )
+
+;;(add-hook 'prog-mode-hook
+  ;;        (lambda () (yafolding-mode)))
 
 
 ;;; shortcuts
@@ -404,6 +473,15 @@
 (bind-key "S-C-<right>" 'enlarge-window-horizontally)
 (bind-key "S-C-<down>" 'shrink-window)
 (bind-key "S-C-<up>" 'enlarge-window)
+
+
+;; speeding up windows system
+(when (eq system-type 'windows-nt)
+  (setq w32-pipe-read-delay 0)
+  (setq recentf-auto-cleanup 'never)
+  (setq w32-get-true-file-attributes nil)
+)
+;;(bind-key "<C-return>" 'origami-toggle-node)
 
 ;; toolbar
 (menu-bar-mode -1)
@@ -423,10 +501,11 @@
              (kill-buffer buffer))) 
          (buffer-list)))
 
-;;; windows related
-;; (w32-send-sys-command 61488)
-;; (setq recentf-auto-cleanup 'never)
-;; (toggle-frame-fullscreen)
-(run-with-idle-timer 0.1 nil 'toggle-fullscreen)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((restclient . t)))
 
-;;; ends
+
+;;;init.el ends
+(put 'narrow-to-page 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
