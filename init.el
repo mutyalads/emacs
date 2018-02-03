@@ -478,6 +478,7 @@
 (bind-key "S-C-<right>" 'enlarge-window-horizontally)
 (bind-key "S-C-<down>" 'shrink-window)
 (bind-key "S-C-<up>" 'enlarge-window)
+(global-set-key [escape] 'ace-jump-mode)
 
 
 
