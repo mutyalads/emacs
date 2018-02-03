@@ -366,7 +366,8 @@
 
 (use-package neotree
   :ensure t)
-
+(global-set-key [f8] 'neotree-toggle)
+(setq projectile-switch-project-action 'neotree-projectile-action)
 
 ;; INSTALLING HASKELL
 ;; https://github.com/serras/emacs-haskell-tutorial/blob/master/tutorial.md
@@ -477,6 +478,7 @@
 (bind-key "S-C-<right>" 'enlarge-window-horizontally)
 (bind-key "S-C-<down>" 'shrink-window)
 (bind-key "S-C-<up>" 'enlarge-window)
+
 
 
 ;; speeding up windows system
