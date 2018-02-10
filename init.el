@@ -234,6 +234,8 @@
          magit-revert-buffers nil)
   :bind (("s-g" . magit-status)
          ("s-b" . magit-blame)))
+(global-set-key (kbd "C-x g") 'magit-status)
+
 ;; git gutter
 (use-package git-gutter
  :ensure t
@@ -366,7 +368,8 @@
 
 (use-package neotree
   :ensure t)
-
+(global-set-key [f8] 'neotree-toggle)
+(setq projectile-switch-project-action 'neotree-projectile-action)
 
 ;; INSTALLING HASKELL
 ;; https://github.com/serras/emacs-haskell-tutorial/blob/master/tutorial.md
@@ -375,6 +378,11 @@
   :ensure t
   :bind ([F8] . haskell-navigate-imports))
 
+(use-package slime
+  :ensure t)
+(load (expand-file-name "~/quicklisp/slime-helper.el"))
+(setq inferior-lisp-program "/usr/local/bin/sbcl")
+(setq slime-contribs '(slime-fancy))
 (use-package hindent
   :ensure t)
 
@@ -477,6 +485,12 @@
 (bind-key "S-C-<right>" 'enlarge-window-horizontally)
 (bind-key "S-C-<down>" 'shrink-window)
 (bind-key "S-C-<up>" 'enlarge-window)
+(global-set-key [escape] 'ace-jump-mode)
+(global-set-key [triple-wheel-left] 'previous-buffer)
+(global-set-key [double-wheel-left] 'previous-buffer)
+(global-set-key [triple-wheel-right] 'next-buffer)
+(global-set-key [wheel-left] 'previous-buffer)
+(global-set-key [wheel-right] 'next-buffer)
 
 
 ;; speeding up windows system
@@ -518,10 +532,33 @@
              (kill-buffer buffer))) 
          (buffer-list)))
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((restclient . t)))
+;; (org-babel-do-load-languages
+;; 'org-babel-load-languages
+;; '((restclient . t)))
 
+(defun yas-ido-expand ()
+  "Lets you select (and expand) a yasnippet key"
+  (interactive)
+    (let ((original-point (point)))
+      (while (and
+              (not (= (point) (point-min) ))
+              (not
+               (string-match "[[:space:]\n]" (char-to-string (char-before)))))
+        (backward-word 1))
+    (let* ((init-word (point))
+           (word (buffer-substring init-word original-point))
+           (list (yas-active-keys)))
+      (goto-char original-point)
+      (let ((key (remove-if-not
+                  (lambda (s) (string-match (concat "^" word) s)) list)))
+        (if (= (length key) 1)
+            (setq key (pop key))
+          (setq key (ido-completing-read "key: " list nil nil word)))
+        (delete-char (- init-word original-point))
+        (insert key)
+        (yas-expand)))))
+
+ (bind-key "C-<tab>"'yas-ido-expand)
 
 ;;;init.el ends
 (put 'narrow-to-page 'disabled nil)
