@@ -1,269 +1,183 @@
-;; init.el --- Emacs configuration
-
-(setq
- inhibit-startup-screen t
- create-lockfiles nil
- make-backup-files nil
- column-number-mode t
- scroll-error-top-bottom t
- show-paren-delay 0.5
- use-package-always-ensure t
- sentence-end-double-space nil)
-
-
-
-(global-unset-key (kbd "C-z"))
-
-
-;; INSTALL PACKAGES
-;; --------------------------------------
-
 (require 'package)
-(setq
- package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
-                    ("org" . "https://orgmode.org/elpa/")
-                    ("melpa" . "https://melpa.org/packages/")
-                    ("melpa-stable" . "https://stable.melpa.org/packages/"))
- package-archive-priorities '(("melpa-stable" . 1)))
+
+;; Add melpa to your packages repositories
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 (package-initialize)
-(when (not package-archive-contents)
-  (package-refresh-contents)
-  (package-install 'use-package))
-(require 'use-package)
 
-(defvar myPackages
-  '(better-defaults
-    ein
-    elpy
-    flycheck
-    material-theme
-    py-autopep8))
-
-(mapc #'(lambda (package)
-    (unless (package-installed-p package)
-      (package-install package)))
-      myPackages)
-
-;; BASIC CUSTOMIZATION
-;; --------------------------------------
-
-(setq inhibit-startup-message t) ;; hide the startup message
-(load-theme 'material t) ;; load material theme
-(global-linum-mode -1) ;; disable/enable line numbers globally
-
-;; PYTHON CONFIGURATION
-;; --------------------------------------
-
-;; (elpy-enable)
-;; (elpy-use-ipython)
-
-;; use flycheck not flymake with elpy
-(when (require 'flycheck nil t)
-  (setq elpy-modules (delq 'elpy-module-flymake 'elpy-modules))
-  (add-hook 'elpy-mode-hook 'flycheck-mode))
-
-;; enable autopep8 formatting on save
-(require 'py-autopep8)
-(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
-
-
-;; dired tree
-
-;; desktop save mode
-(desktop-save-mode 1)
-
-;; init.el ends here
-
-(require 'package)
-(setq package-enable-at-startup nil)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
-(add-to-list 'package-archives '("marmalade" . "https://marmalade-repo.org/packages/"))
-(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-(package-initialize)
-
+;; Install use-package if not already installed
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
 
-(eval-when-compile
-  (require 'use-package))
-(require 'diminish)
-(require 'bind-key)
+(require 'use-package)
 
-;; (use-package pkg-info)
+;; Enable defer and ensure by default for use-package
+;; Keep auto-save/backup files separate from source code:  https://github.com/scalameta/metals/issues/1027
+(setq use-package-always-defer t
+      use-package-always-ensure t
+      backup-directory-alist `((".*" . ,temporary-file-directory))
+      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 
-(use-package ensime
-  :ensure t
-  :pin melpa-stable)
-
-(use-package sbt-mode
-  :ensure t
-  :pin melpa)
-
-(use-package yafolding
-  :ensure t
-  :pin melpa)
-
-(use-package restclient
-  :ensure t
-  :pin melpa)
-
+;; Enable scala-mode for highlighting, indentation and motion commands
 (use-package scala-mode
+  :mode "\\.s\\(cala\\|bt\\)$")
+
+(use-package clojure-mode
   :ensure t
-  :interpreter
-  ("scala" . scala-mode))
-
-(use-package xref-js2
-  :disabled
-  :ensure t)
-
-(use-package rjsx-mode
-  :ensure t)
-
-;;; minor modes for scala developement
-(use-package focus
-  :ensure t
-  :pin melpa)
-
-;; eldoc mode, arguments for methods
-(use-package eldoc
-  :ensure t
-  :pin melpa
-  :config
-  (add-hook 'emacs-lisp-mode-hook #'eldoc-mode))
-
-;; colour code nested brackets
-(use-package rainbow-delimiters
-  :ensure t
-  :pin melpa)
-;; helps check syntax for bash python sql etc etc
-(use-package flycheck
-  :disabled
-  :ensure t
-  :pin melpa)
-;; helps print documentation in minibuffer
-
-
-;; logview mode for all logs
-(use-package logview
-  :ensure t
-  :pin melpa)
-
-;;ace jump must have
-(use-package ace-jump-mode
-  :ensure t
-  :pin melpa)
-
-(use-package which-key
-  :ensure t
-  :pin melpa)
-(which-key-mode)
-
-;; smart parenthesis
-(use-package smartparens
-  :diminish smartparens-mode
-  :commands
-  smartparens-strict-mode
-  smartparens-mode
-  sp-restrict-to-pairs-interactive
-  sp-local-pair
+  :mode (("\\.clj\\'" . clojure-mode)
+         ("\\.edn\\'" . clojure-mode))
   :init
-  (setq sp-interactive-dwim t)
+  (add-hook 'clojure-mode-hook #'rainbow-delimiters-mode)
+)
+(use-package cider
+  :ensure t
+  :defer t
+  :init (add-hook 'cider-mode-hook #'clj-refactor-mode)
+  :diminish subword-mode
   :config
-  (require 'smartparens-config)
+  (setq nrepl-log-messages t                  
+        cider-repl-display-in-current-window t
+        cider-repl-use-clojure-font-lock t    
+        cider-prompt-save-file-on-load 'always-save
+        cider-font-lock-dynamically '(macro core function var)
+        nrepl-hide-special-buffers t            
+        cider-overlays-use-font-lock t)         
+  (cider-repl-toggle-pretty-printing))
+
+(use-package cider-eval-sexp-fu
+  :defer t)
+
+(use-package clj-refactor
+  :defer t
+  :ensure t
+  :diminish clj-refactor-mode
+  :config (cljr-add-keybindings-with-prefix "C-c C-m"))
+
+(use-package smartparens
+  :defer t
+  :ensure t
+  :diminish smartparens-mode
+  :init
+  (setq sp-override-key-bindings
+        '(("C-<right>" . nil)
+          ("C-<left>" . nil)
+          ("C-)" . sp-forward-slurp-sexp)
+          ("M-<backspace>" . nil)
+          ("C-(" . sp-forward-barf-sexp)))
+  :config
   (sp-use-smartparens-bindings)
+  (sp--update-override-key-bindings)
+  :commands (smartparens-mode show-smartparens-mode))
 
-  (sp-pair "(" ")" :wrap "C-(") ;; how do people live without this?
-  (sp-pair "[" "]" :wrap "s-[") ;; C-[ sends ESC
-  (sp-pair "{" "}" :wrap "C-{")
+;; Enable sbt mode for executing sbt commands
+(use-package sbt-mode
+  :commands sbt-start sbt-command
+  :config
+  ;; WORKAROUND: https://github.com/ensime/emacs-sbt-mode/issues/31
+  ;; allows using SPACE when in the minibuffer
+  (substitute-key-definition
+   'minibuffer-complete-word
+   'self-insert-command
+   minibuffer-local-completion-map)
+   ;; sbt-supershell kills sbt-mode:  https://github.com/hvesalai/emacs-sbt-mode/issues/152
+   (setq sbt:program-options '("-Dsbt.supershell=false"))
+)
 
-  ;; WORKAROUND https://github.com/Fuco1/smartparens/issues/543
-  (bind-key "C-<left>" nil smartparens-mode-map)
-  (bind-key "C-<right>" nil smartparens-mode-map)
+;; Enable nice rendering of diagnostics like compile errors.
+(use-package flycheck
+  :init (global-flycheck-mode))
 
-  (bind-key "s-<delete>" 'sp-kill-sexp smartparens-mode-map)
-  (bind-key "s-<backspace>" 'sp-backward-kill-sexp smartparens-mode-map))
+(use-package lsp-mode
+  :init (setq lsp-keymap-prefix "C-q")
+  ;; Optional - enable lsp-mode automatically in scala files
+  :hook  (scala-mode . lsp)
+         (lsp-mode . lsp-lens-mode)
+  :config (setq lsp-prefer-flymake nil))
 
-;; back space
-(defun contextual-backspace ()
-  "Hungry whitespace or delete word depending on context."
-  (interactive)
-  (if (looking-back "[[:space:]\n]\\{2,\\}" (- (point) 2))
-      (while (looking-back "[[:space:]\n]" (- (point) 1))
-        (delete-char -1))
-    (cond
-     ((and (boundp 'smartparens-strict-mode)
-           smartparens-strict-mode)
-      (sp-backward-kill-word 1))
-     ((and (boundp 'subword-mode)
-           subword-mode)
-      (subword-backward-kill 1))
-     (t
-      (backward-kill-word 1)))))
+;; Add metals backend for lsp-mode
+(use-package lsp-metals)
 
-;; Formatting
-(defun indent-buffer ()
-  "Indent the entire buffer."
-  (interactive)
-  (save-excursion
-    (delete-trailing-whitespace)
-    (indent-region (point-min) (point-max) nil)
-    (untabify (point-min) (point-max))))
+;; Enable nice rendering of documentation on hover
+(use-package lsp-ui)
 
-;; snippets https://github.com/AndreaCrotti/yasnippet-snippets
-(use-package yasnippet
-  :diminish yas-minor-mode
-  :commands yas-minor-mode
-  :config (yas-reload-all))
+;; lsp-mode supports snippets, but in order for them to work you need to use yasnippet
+;; If you don't want to use snippets set lsp-enable-snippet to nil in your lsp-mode settings
+;;   to avoid odd behavior with snippets and indentation
+(use-package yasnippet)
 
-;; templates
+;; Add company-lsp backend for metals
+(use-package company-lsp)
 
-;;; code compilation
-;;flycheck
-(use-package flycheck-cask
-  :commands flycheck-cask-setup
-  :config (add-hook 'emacs-lisp-mode-hook (flycheck-cask-setup)))
+;; Use the Debug Adapter Protocol for running tests and debugging
+(use-package posframe
+  ;; Posframe is a pop-up tool that must be manually installed for dap-mode
+  )
+(use-package dap-mode
+  :hook
+  (lsp-mode . dap-mode)
+  (lsp-mode . dap-ui-mode)
+  )
 
+;; Use the Tree View Protocol for viewing the project structure and triggering compilation
+(use-package lsp-treemacs
 
-;;; git
-(use-package magit
-  :commands magit-status magit-blame
-  :init (setq
-         magit-revert-buffers nil)
-  :bind (("s-g" . magit-status)
-         ("s-b" . magit-blame)))
-;; git gutter
-(use-package git-gutter
- :ensure t
- :pin melpa)
-;; git timemachine https://github.com/pidu/git-timemachine
-(use-package git-timemachine
- :ensure t
-  :pin melpa)
-;; git timemachine hook ensime
-(add-hook 'git-timemachine-mode-hook (lambda () (ensime-mode 0)))
+;;  :config
+;;  (lsp-metals-treeview-enable t)
+;;  (setq lsp-metals-treeview-show-when-views-received t)
+ )
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (sass-mode pdf-tools smartparens-config smartparens clj-refactor cider-eval-sexp-fu cider clojure-mode neotree direx dirtree shell-pop idea-darkula-theme immaterial-theme material-theme which-key ace-jump-mode logview rainbow-delimiters expand-region undo-tree flx-ido projectile magit company-lsp yasnippet lsp-ui lsp-metals lsp-mode flycheck sbt-mode scala-mode use-package)))
+ '(shell-pop-autocd-to-working-dir t)
+ '(shell-pop-cleanup-buffer-at-process-exit t)
+ '(shell-pop-full-span t)
+ '(shell-pop-restore-window-configuration t)
+ '(shell-pop-shell-type
+   (quote
+    ("ansi-term" "*ansi-term*"
+     (lambda nil
+       (ansi-term shell-pop-term-shell)))))
+ '(shell-pop-term-shell "/bin/bash")
+ '(shell-pop-universal-key "C-t")
+ '(shell-pop-window-position "bottom")
+ '(shell-pop-window-size 30))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "#2B2B2B" :foreground "#A9B7C6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 160 :width normal :foundry "nil" :family "Monaco")))))
 
-;;; Navigation
 (use-package projectile
   :demand
   :init   (setq
 	   projectile-use-git-grep t
 	   projectile-enable-caching t
 	   projectile-indexing-method 'alien)
-  :config (projectile-global-mode t)
-  :bind   (("s-r" . projectile-grep)))
+  :config (projectile-mode t)
+  :bind   (
+	   ("s-r" . projectile-grep)
+	   )
+  :bind-keymap("C-c p" . projectile-command-map)
+ )
 
-;; go to last change
-(use-package goto-chg
-  :commands goto-last-change
-  ;; complementary to
-  ;; C-x r m / C-x r l
-  ;; and C-<space> C-<space> / C-u C-<space>
-  :bind (("C-." . goto-last-change)
-         ("C-," . goto-last-change-reverse)))
-;; company-mode
+
+(use-package magit
+  :commands magit-status magit-blame
+  :init (setq
+	 magit-revert-buffers nil)
+  :bind (("s-g" . magit-status)
+	 ("s-b" . magit-blame))
+  )
+(global-set-key (kbd "C-x g") 'magit-status)
+
+
 (use-package company
   :diminish company-mode
   :commands company-mode
@@ -279,7 +193,8 @@
   (define-key company-active-map [tab] nil)
   (define-key company-active-map (kbd "TAB") nil))
 
-;; flex search similar to intellij search
+
+
 (use-package flx-ido
   :demand
   :init
@@ -289,18 +204,11 @@
    ;; C-f to revert to find-file
    ido-show-dot-for-dired nil
    ido-enable-dot-prefix t)
-  :config
-  (ido-mode 1)
+  :config  (ido-mode 1)
   (ido-everywhere 1)
   (flx-ido-mode 1))
 
-;; higlight symbol
-(use-package highlight-symbol
-  :diminish highlight-symbol-mode
-  :commands highlight-symbol
-  :bind ("s-h" . highlight-symbol))
 
-;; undo-tree
 (use-package undo-tree
   :diminish undo-tree-mode
   :config (global-undo-tree-mode)
@@ -308,233 +216,106 @@
 
 (use-package expand-region
   :commands 'er/expand-region
-  :bind ("C-=" . er/expand-region))
-(require 'ensime-expand-region)
-
-
-;;; ### FRONT END ###
-
-;; JS https://emacs.cafe/emacs/javascript/setup/2017/04/23/emacs-setup-javascript.html
-
-;; JS2-mode # todo: add hook 
-(use-package js2-mode
-  :ensure t
-  :mode ("\\.js$" . js2-mode)
-  :init
-  (add-hook 'js2-mode-hook #'js2-imenu-extras-mode))
-;;  (define-key 'js2-mode-map (kbd "C-k") #'js2r-kill))
-;; js-mode (which js2 is based on) binds "M-." which conflicts with xref, so
-
-(use-package js2-refactor
-  :ensure t
-  :init
-  (add-hook 'js2-mode-hook #'js2-refactor-mode)
-  (js2r-add-keybindings-with-prefix "C-c C-r"))
-
-(use-package company-tern
-  :ensure t)
-(use-package tern
-  :ensure t)
-(use-package origami
-  :ensure t)
-;; js hooks
-(add-hook 'js2-mode-hook (lambda ()
-			   (add-hook 'xref-backend-functions #'xref-js2-xref-backend nil t)))
-(add-hook 'js2-mode-hook (lambda ()
-                           (tern-mode)
-                           (company-mode)))
-(define-key tern-mode-keymap (kbd "M-.") nil)
-(define-key tern-mode-keymap (kbd "M-,") nil)
-
-(defun json-hooks-all ()
-                   (restclient-mode)
-		   (flycheck-mode)
-		   (yafolding-mode))
-		   
-;; json hooks
-(use-package json-mode
-  :mode ("\\.json$" . json-mode))
-(add-hook 'json-mode-hook 'json-hooks-all)
-
-;; projectile-speedbar
-(use-package projectile-speedbar
-  :ensure t)
-(bind-key "M-<f2>" 'projectile-speedbar-open-current-buffer-in-tree)
-
-(use-package sr-speedbar
-  :ensure t)
-
-(use-package neotree
-  :ensure t)
-(global-set-key [f8] 'neotree-toggle)
-(setq projectile-switch-project-action 'neotree-projectile-action)
-
-;; INSTALLING HASKELL
-;; https://github.com/serras/emacs-haskell-tutorial/blob/master/tutorial.md
-
-(use-package haskell-mode
-  :ensure t
-  :bind ([F8] . haskell-navigate-imports))
-
-(use-package hindent
-  :ensure t)
-
-(let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
-  (setenv "PATH" (concat my-cabal-path path-separator (getenv "PATH")))
-  (add-to-list 'exec-path my-cabal-path))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (which-key rjsx-mode yafolding use-package undo-tree smartparens restclient rainbow-delimiters py-autopep8 projectile-speedbar neotree material-theme magit logview js2-refactor highlight-symbol goto-chg git-timemachine git-gutter focus flycheck-cask flx-ido expand-region ensime elpy ein company-tern better-defaults auto-package-update ace-jump-mode))))
-;; M-x haskell-mode-stylish-buffer
-
-
-(eval-after-load 'haskell-mode '(progn
-  (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-or-reload)
-  (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
-  (define-key haskell-mode-map (kbd "C-c C-n C-t") 'haskell-process-do-type)
-  (define-key haskell-mode-map (kbd "C-c C-n C-i") 'haskell-process-do-info)
-  (define-key haskell-mode-map (kbd "C-c C-n C-c") 'haskell-process-cabal-build)
-  (define-key haskell-mode-map (kbd "C-c C-n c") 'haskell-process-cabal)))
-(eval-after-load 'haskell-cabal '(progn
-  (define-key haskell-cabal-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
-  (define-key haskell-cabal-mode-map (kbd "C-c C-k") 'haskell-interactive-mode-clear)
-  (define-key haskell-cabal-mode-map (kbd "C-c C-c") 'haskell-process-cabal-build)
-  (define-key haskell-cabal-mode-map (kbd "C-c c") 'haskell-process-cabal)))
-
-
-;;C-c C-o to invoke the compiler
-(eval-after-load 'haskell-mode
-  '(define-key haskell-mode-map (kbd "C-c C-o") 'haskell-compile))
-
-
-
-;;; themes
-;;material-theme
-
-;;; fonts
-(setq org-src-fontify-natively t)
-
-;;; macros
-
-;;; shortcuts - key bindings
-(defun duplicate-line()
-  (interactive)
-  (move-beginning-of-line 1)
-  (kill-line)
-  (yank)
-  (open-line 1)
-  (next-line 1)
-  (yank)
-)
-(global-set-key (kbd "C-c C-d") 'duplicate-line)
-(global-set-key (kbd "C-c SPC") 'ace-jump-mode)
-
-
-
-(defun indent-buffer ()
-  "Indent the entire buffer."
-  (interactive)
-  (save-excursion
-    (delete-trailing-whitespace)
-    (indent-region (point-min) (point-max) nil)
-    (untabify (point-min) (point-max))))
-
-
-
-
-;;; hooks
-;;scala-mode-hook (todo:// clean up and add to scala-mode)
-(add-hook 'scala-mode-hook
-          (lambda ()
-	    (setq show-trailing-whitespace t)
-            (show-paren-mode)
-            (smartparens-mode)
-            (yas-minor-mode)
-            (git-gutter-mode)
-            (company-mode)
-            (scala-mode:goto-start-of-code)
-	    (rainbow-delimiters-mode)
-	    (yafolding-mode)
-	    )
-	  )
-
-;;(add-hook 'prog-mode-hook
-  ;;        (lambda () (yafolding-mode)))
-
-
-;;; shortcuts
-(bind-key "C-<Backspace>" 'contextual-backspace)
-(bind-key "C-c C-l" 'org-insert-link-global)
-(bind-key "C-c l" 'org-store-link)
-(bind-key "C-c C-o" 'org-open-at-point-global)
-(bind-key "C-+" 'text-scale-increase)
-(bind-key "C--" 'text-scale-decrease)
-(bind-key "S-C-<left>" 'shrink-window-horizontally)
-(bind-key "S-C-<right>" 'enlarge-window-horizontally)
-(bind-key "S-C-<down>" 'shrink-window)
-(bind-key "S-C-<up>" 'enlarge-window)
-(global-set-key [escape] 'ace-jump-mode)
-
-
-
-;; speeding up windows system
-(when (eq system-type 'windows-nt)
-  (setq w32-pipe-read-delay 0)
-  (setq recentf-auto-cleanup 'never)
-  (setq w32-get-true-file-attributes nil)
-  )
-;; setting mac settings
-(when (eq system-type 'darwin) ;; mac specific settings
-  (setq mac-option-modifier 'alt)
-  (setq mac-command-modifier 'meta)
-  (global-set-key [kp-delete] 'delete-char) ;; sets fn-delete to be right-delete
-  (setenv "PATH"
-	(concat
-	 "/usr/local/bin" ":"
-	 (getenv "PATH")
-	 ))
+  :bind (("C-=" . er/expand-region)
+	 ("C-\-" . er/contract-region)
+	 ("C-\"" . er/mark-inside-quotes))
   )
 
 
-;;(bind-key "<C-return>" 'origami-toggle-node)
+(use-package rainbow-delimiters
+  :ensure t)
 
-;; toolbar
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+(add-hook 'scala-mode 'rainbow-delimiters-mode)
 
-;;; functions
+
+;; logview mode for all logs
+(use-package logview
+  :ensure t
+  :pin melpa)
+
+;;ace jump must have
+(use-package ace-jump-mode
+  :ensure t
+  :pin melpa)
+
+(use-package which-key
+  :ensure t
+  :pin melpa)
+
+(use-package shell-pop
+  :ensure t
+  :pin melpa)
+
+
+
 (defun kill-other-buffers ()
   "Kill all other buffers."
   (interactive)
   (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
 
- (defun kill-dired-buffers ()
-	 (interactive)
-	 (mapc (lambda (buffer) 
-           (when (eq 'dired-mode (buffer-local-value 'major-mode buffer)) 
-             (kill-buffer buffer))) 
-         (buffer-list)))
+(defun kill-dired-buffers ()
+  (interactive)
+  (mapc (lambda (buffer)
+	  (when (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+	    (kill-buffer buffer)))
+	(buffer-list)))
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((restclient . t)))
+;;; to make tramp faster switching of projectile
+(defadvice projectile-on (around exlude-tramp activate)
+  "This should disable projectile when visiting a remote file"
+  (unless  (--any? (and it (file-remote-p it))
+                   (list
+                    (buffer-file-name)
+                    list-buffers-directory
+                    default-directory
+                    dired-directory))
+    ad-do-it))
+
+(setq projectile-mode-line "Projectile")
 
 
-;;;init.el ends
-(put 'narrow-to-page 'disabled nil)
-(put 'narrow-to-region 'disabled nil)
+(bind-key "C-<Backspace>" 'contextual-backspace)
+(bind-key "C-c C-l" 'org-insert-link-global)
+(bind-key "C-c l" 'org-store-link)
+(bind-key "C-c C-o" 'org-open-at-point-global)
+(bind-key "C-+" 'text-scale-increase)
+(bind-key "C-_" 'text-scale-decrease)
+(bind-key "S-C-<left>" 'shrink-window-horizontally)
+(bind-key "S-C-<right>" 'enlarge-window-horizontally)
+(bind-key "S-C-<down>" 'shrink-window)
+(bind-key "S-C-<up>" 'enlarge-window)
+(bind-key "C-;" 'comment-line)
+(bind-key "C-c C-y" 'term-paste)
+;; C-t for pop up bash
+
+
+;;neotree
+(global-set-key [f8] 'neotree-toggle)
 
 
 
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(which-key-mode)
+(global-set-key [escape] 'ace-jump-mode)
+(global-set-key (kbd "C-w") 'kill-ring-save)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+;; (load-theme 'idea-darkula t)
+ (load-theme 'material t)
+;; (load-theme 'immaterial-dark t)    ;; dark variant
+;; (load-theme 'immaterial-light t)   ;; light variant
+;;(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(set-display-table-slot standard-display-table 
+                        'vertical-border (make-glyph-code 8203))
+
+
+
+(defun ssh-to-host (num)
+  (interactive "P")
+  (let* ((buffer-name (format "*host%02d*" num))
+         (buffer (get-buffer buffer-name)))
+    (if buffer
+        (switch-to-buffer buffer)
+      (term "/bin/bash")
+      (term-send-string
+       (get-buffer-process (rename-buffer buffer-name))
+       (format "ssh host%02d.foo.com\r" num)))))
