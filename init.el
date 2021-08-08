@@ -132,17 +132,15 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   (quote
-    (sass-mode pdf-tools smartparens-config smartparens clj-refactor cider-eval-sexp-fu cider clojure-mode neotree direx dirtree shell-pop idea-darkula-theme immaterial-theme material-theme which-key ace-jump-mode logview rainbow-delimiters expand-region undo-tree flx-ido projectile magit company-lsp yasnippet lsp-ui lsp-metals lsp-mode flycheck sbt-mode scala-mode use-package)))
+   '(doom-modeline all-the-icons doom-themes org-bullets sass-mode pdf-tools smartparens-config smartparens clj-refactor cider-eval-sexp-fu cider clojure-mode neotree direx dirtree shell-pop idea-darkula-theme immaterial-theme material-theme which-key ace-jump-mode logview rainbow-delimiters expand-region undo-tree flx-ido projectile magit company-lsp yasnippet lsp-ui lsp-metals lsp-mode flycheck sbt-mode scala-mode use-package))
  '(shell-pop-autocd-to-working-dir t)
  '(shell-pop-cleanup-buffer-at-process-exit t)
  '(shell-pop-full-span t)
  '(shell-pop-restore-window-configuration t)
  '(shell-pop-shell-type
-   (quote
-    ("ansi-term" "*ansi-term*"
+   '("ansi-term" "*ansi-term*"
      (lambda nil
-       (ansi-term shell-pop-term-shell)))))
+       (ansi-term shell-pop-term-shell))))
  '(shell-pop-term-shell "/bin/bash")
  '(shell-pop-universal-key "C-t")
  '(shell-pop-window-position "bottom")
@@ -246,10 +244,13 @@
   :ensure t
   :pin melpa)
 
+
 (use-package org-roam
-      :ensure t
-      :custom
-      (org-roam-directory (file-truename "~/workspace/rudra_it/orgfile/secondbrain"))
+  :ensure t
+  :init
+  (setq org-roam-v2-ack t)
+  :custom
+      (org-roam-directory (file-truename "~/workspace/rudra_it/orgfiles/secondbrain"))
       :bind (("C-c n l" . org-roam-buffer-toggle)
              ("C-c n f" . org-roam-node-find)
              ("C-c n g" . org-roam-graph)
@@ -261,7 +262,26 @@
       (org-roam-setup)
       ;; If using org-roam-protocol
       (require 'org-roam-protocol))
+(setq org-roam-graph-executable "/usr/local/bin/dot")
 
+(use-package org-bullets
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(use-package doom-themes
+  :init (load-theme 'doom-palenight t))
+
+(use-package all-the-icons)
+
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 15)))
+
+(defhydra hydra-zoom (global-map "<f2>")
+  "zoom"
+  ("g" text-scale-increase "in")
+  ("l" text-scale-decrease "out"))
 
 (defun kill-other-buffers ()
   "Kill all other buffers."
@@ -301,6 +321,8 @@
 (bind-key "S-C-<up>" 'enlarge-window)
 (bind-key "C-;" 'comment-line)
 (bind-key "C-c C-y" 'term-paste)
+(global-set-key [mouse-4] 'previous-buffer)
+(global-set-key [mouse-3] 'next-buffer)
 ;; C-t for pop up bash
 
 
@@ -313,15 +335,15 @@
 (global-set-key [escape] 'ace-jump-mode)
 (global-set-key (kbd "C-w") 'kill-ring-save)
 (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
-;; (load-theme 'idea-darkula t)
- (load-theme 'material t)
-;; (load-theme 'immaterial-dark t)    ;; dark variant
-;; (load-theme 'immaterial-light t)   ;; light variant
-;;(tool-bar-mode -1)
+;;  (load-theme 'material t)
+(tool-bar-mode -1)
+(menu-bar-mode -1)            ; Disable the menu bar
+(tooltip-mode -1)           ; Disable tooltips
 (scroll-bar-mode -1)
+(set-fringe-mode 10)        ; Give some breathing room
 (set-display-table-slot standard-display-table 
                         'vertical-border (make-glyph-code 8203))
-
+(setq visible-bell t)
 
 
 (defun ssh-to-host (num)
