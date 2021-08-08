@@ -1,5 +1,20 @@
 (require 'package)
 
+;; You will most likely need to adjust this font size for your system!
+(defvar efs/default-font-size 100)
+(defvar efs/default-variable-font-size 100)
+
+;;(set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
+
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height efs/default-font-size)
+
+;; Set the variable pitch face
+;;(set-face-attribute 'variable-pitch nil :font "Cantarell" :height efs/default-variable-font-size :weight 'regular)
+
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+
 ;; Add melpa to your packages repositories
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
@@ -244,7 +259,6 @@
   :ensure t
   :pin melpa)
 
-
 (use-package org-roam
   :ensure t
   :init
@@ -278,6 +292,7 @@
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
 
+
 (defhydra hydra-zoom (global-map "<f2>")
   "zoom"
   ("g" text-scale-increase "in")
@@ -309,6 +324,7 @@
 (setq projectile-mode-line "Projectile")
 
 
+(set-frame-font "Fira Code Retina 18" nil t)
 (bind-key "C-<Backspace>" 'contextual-backspace)
 (bind-key "C-c C-l" 'org-insert-link-global)
 (bind-key "C-c l" 'org-store-link)
@@ -332,7 +348,7 @@
 
 
 (which-key-mode)
-(global-set-key [escape] 'ace-jump-mode)
+(global-set-key [f1] 'ace-jump-mode)
 (global-set-key (kbd "C-w") 'kill-ring-save)
 (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
 ;;  (load-theme 'material t)
